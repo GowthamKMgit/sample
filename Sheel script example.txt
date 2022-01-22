@@ -1,0 +1,100 @@
+#!/usr/bin/ksh
+#-----------------------------------------------------------------------------------------------#
+# Copyright 2019 (C) Tesco                                                                      #
+# Created on    : 20-07-2020                                                                    #
+# Author        : saravanan Dhanapal                                                            #
+# Description   : To remove the special characters and replace local characters of czech republic #
+#                 with respective English Characters from the file        
+#Filename       : XXTCBANK_SPECIAL_CHAR_REMOVAL.sh  chmod 755                        #
+#-----------------------------------------------------------------------------------------------#
+# OLD/NEW VER.    AUTHOR/DATE                  DESCRIPTION OF CHANGE                            #
+#-----------------------------------------------------------------------------------------------#
+# --/1.0.0      |  saravanan Dhanapal            | Initial release                             #
+#               |  20-07-2020                    |                                                   #
+#-----------------------------------------------------------------------------------------------#
+
+#Calling Envrionment variables
+
+#. '/ofi11i/APPL/TRACE1/appl/xxtc/11.5.0/gpg/prop/XXTCCITI_ENV_VAR.sh'
+
+
+### Email notifier
+mailer(){
+if [ "$p_email_to" != "" ]
+then
+echo "Hi All,
+\nCITI Bank Special & Local character removal step failed.
+\np_prop_dir: $p_prop_dir
+\np_lkp_fname: $p_lkp_fname
+\np_src_file_dir : $p_src_file_dir
+\np_src_file_name : $p_src_file_name
+\nRegards,
+OFI Team" | mailx -s "OFICE --- CITI Bank Special & Local character removal step  --- $" $p_email_to
+fi
+}
+echo "---------------------------------------------------------------------------------" >> $p_gpg_log_dir/$P_log_file_name
+echo "---------------------------------------------------------------------------------" >> $p_gpg_log_dir/$P_log_file_name
+echo $timestamp :"S: Starting OFICE --- CITI Bank Special & Local character removal Program -- `date "+%H:%M"`" >> $p_gpg_log_dir/$P_log_file_name
+echo $timestamp :"--S:Starting replace local characters of czech republic with respective English Characters step -- `date "+%H:%M"`" >> $p_gpg_log_dir/$P_log_file_name
+
+#Filename capturing from source path
+
+p_src_file_name=`cat $p_src_file_dir/file_name.txt`
+echo "p_src_file_name is:" $p_src_file_name >> p_gpg_log_dir/$P_log_file_name
+
+export LANG='cs_CZ.iso88592'
+
+
+# Read File from Lookup path
+cat $p_prop_dir/$p_lkp_fname | while read line || [ -n "$line" ];
+do
+   spec_rchar=`echo $line | cut -c 1`
+   repl_rchar=`echo $line | cut -c 4`
+   
+   echo $timestamp: 'the special_character and replace character values are :' $spec_rchar $repl_rchar >> $p_gpg_log_dir/$P_log_file_name
+   
+   echo $spec_rchar $repl_rchar $p_src_file_dir $p_src_file_name >> $p_gpg_log_dir/$P_log_file_name
+   
+   echo `sed 's/'$spec_rchar'/'$repl_rchar'/g' $p_src_file_dir/$p_src_file_name` > $p_src_file_dir/'file_'$p_src_file_name && mv $p_src_file_dir/'file_'$p_src_file_name $p_src_file_dir/$p_src_file_name
+   
+   retcode=`echo $?`
+   
+   if [ ${retcode} -ne 0 ]
+   then
+      echo "--------------------- Error: replace local characters removal step. Return code: ${retcode}" >> $p_gpg_log_dir/$P_log_file_name
+      mailer
+      exit 1
+   else
+      echo $timestamp:"--C:Comeplted step of replace local characters removal step successfully -- `date "+%H:%M"`" >> $p_gpg_log_dir/$P_log_file_name
+
+      #Special Character removal from the file
+ echo $timestamp :"--S:Starting step of special Character removal from the file -- `date "+%H:%M"`" >> $p_gpg_log_dir/$P_log_file_name
+ 
+ echo $p_src_file_dir $p_src_file_name >> $p_gpg_log_dir/$P_log_file_name
+ 
+ 
+ 
+ #Except Alphanumeric characters and ?#+-.,'() remaining characters will be removed from the file.
+ 
+ echo `sed "s/[^[:alnum:]?#+-.,'()]//g" $p_src_file_dir/$p_src_file_name` #> $p_src_file_dir/'file_'$p_src_file_name && mv $p_src_file_dir/'file_'$p_src_file_name $p_src_file_dir/$p_src_file_name
+
+ 
+ retcode=`echo $?`
+ 
+ 
+ 
+ if [ ${retcode} -ne 0 ]
+   then
+      echo $timestamp :"--------------------- Error: replace local characters removal step. Return code: ${retcode}" >> $p_gpg_log_dir/$P_log_file_name
+      mailer
+      exit 1
+      else
+ 
+   echo $timestamp : "--C:Comeplted step of special Character removal successfully -- `date "+%H:%M"`" >> $p_gpg_log_dir/$P_log_file_name
+
+ fi
+  fi
+
+done;
+
+echo $timestamp: "C: Compelted OFICE --- CITI Bank Special & Local character removal Program successfully -- `date "+%H:%M"`" >> $p_gpg_log_dir/$P_log_file_name
