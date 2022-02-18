@@ -29,3 +29,5 @@ https://start.spring.io/
 From saravanan Dhanapal to Everyone 01:48 PM
 mvnw clean package
 install maven in ur local
+
+Git_commans.txt
